@@ -16,7 +16,7 @@ const TopSection = styled.div`
 const FilterData = {
   gender: {
     title: "성별",
-    options: [["female", "male", "unisex"]],
+    options: [["남성", "여성", "남녀공용"]],
   },
   color: {
     title: "색상",
