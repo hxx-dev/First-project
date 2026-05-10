@@ -1,0 +1,225 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import { useContext } from "react";
+import { ProductContext } from "../../context/ProductContext";
+
+const Wrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 40px 0 80px;
+  font-family: Pretendard, sans-serif;
+`;
+
+const Layout = styled.div`
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1200px;
+`;
+
+const ImageSection = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 140px;
+`;
+
+const Divider = styled.div`
+  width: 1px;
+  align-self: stretch;
+  background: #e0e0e0;
+  flex-shrink: 0;
+`;
+
+const InfoSection = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  padding-left: 60px;
+`;
+
+const ImageBox = styled.div`
+  width: 400px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+`;
+const ProductImage = styled.img`
+  width: 100%;
+  height: 520px;
+  object-fit: cover;
+  display: block;
+`;
+
+const InfoBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 12px;
+`;
+
+const ModalDesc = styled.p`
+  font-size: 14px;
+  color: #777;
+  margin: 0 0 28px;
+`;
+const Price = styled.div`
+  font-size: 32px;
+  font-weight: 800;
+  color: #111;
+`;
+const Title = styled.div`
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.5;
+`;
+const RatingRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+const Star = styled.span`
+  font-size: 20px;
+  color: black;
+`;
+const RatingNum = styled.span`
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+`;
+const ReviewText = styled.span`
+  font-size: 13px;
+  color: #888;
+`;
+const NotFound = styled.div`
+  text-align: center;
+  padding: 120px 0;
+  font-size: 20px;
+  color: #aaa;
+  font-family: Pretendard, sans-serif;
+`;
+
+// 삭제 모달
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+`;
+const ModalBox = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 40px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  font-family: Pretendard, sans-serif;
+`;
+const ModalTitle = styled.h3`
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 8px;
+`;
+// const ModalDesc = styled.p`
+//   font-size: 14px;
+//   color: #777;
+//   margin: 0 0 28px;
+// `;
+const ModalBtnRow = styled.div`
+  display: flex;
+  gap: 12px;
+`;
+const ModalBtn = styled.button`
+  flex: 1;
+  padding: 13px 0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: Pretendard, sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+`;
+const CancelBtn = styled(ModalBtn)`
+  background: #D0D0D0;
+  color: #333333;
+`;
+const ConfirmBtn = styled(ModalBtn)`
+  background: #F2F2F2;
+  color: #333333;
+`;
+
+function StarRating() {
+  return <Star>★</Star>;
+}
+
+export default function ProductDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { getProduct, deleteProduct } = useContext(ProductContext);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const product = getProduct(id);
+
+  useEffect(() => {
+    const handler = () => setShowDeleteModal(true);
+    window.addEventListener("openDeleteModal", handler);
+    return () => window.removeEventListener("openDeleteModal", handler);
+  }, []);
+
+  if (!product) return <NotFound>상품을 찾을 수 없습니다.</NotFound>;
+
+return (
+  <Wrapper>
+    <Layout>
+      <ImageSection>
+        <ImageBox>
+          <ProductImage src={product.imageUrl} alt={product.title} />
+        </ImageBox>
+      </ImageSection>
+
+      <Divider />
+
+      <InfoSection>
+        <InfoBox>
+          {/* <Category>{product.category}</Category> */}
+          <Price>{product.price}</Price>
+          <Title>{product.title}</Title>
+          <RatingRow>
+            <StarRating rating={product.rating} />
+            <RatingNum>{product.rating?.toFixed(1)}</RatingNum>
+            <ReviewText>{product.review}</ReviewText>
+          </RatingRow>
+          {/* <Divider /> */}
+          {/* <MetaRow>
+            <MetaItem><MetaLabel>성별</MetaLabel><MetaValue>{product.gender}</MetaValue></MetaItem>
+            <MetaItem><MetaLabel>색상</MetaLabel><MetaValue>{product.color}</MetaValue></MetaItem>
+          </MetaRow>
+          <MetaItem>
+            <MetaLabel>사이즈</MetaLabel>
+            <SizeList>{product.size?.map((s) => <SizeChip key={s}>{s}</SizeChip>)}</SizeList>
+          </MetaItem> */}
+        </InfoBox>
+      </InfoSection>
+    </Layout>
+
+    {showDeleteModal && (
+      <Overlay onClick={() => setShowDeleteModal(false)}>
+        <ModalBox onClick={(e) => e.stopPropagation()}>
+          <ModalTitle>상품 삭제</ModalTitle>
+          <ModalDesc>상품을 삭제하시겠습니까?</ModalDesc>
+          <ModalBtnRow>
+            <ConfirmBtn onClick={() => { deleteProduct(id); navigate("/"); }}>확인</ConfirmBtn>
+            <CancelBtn onClick={() => setShowDeleteModal(false)}>취소</CancelBtn>
+          </ModalBtnRow>
+        </ModalBox>
+      </Overlay>
+    )}
+  </Wrapper>
+);
+}

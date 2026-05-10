@@ -1,5 +1,5 @@
 import styled from "styled-components";
-
+import { useNavigate } from "react-router-dom";
 const CardContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -44,9 +44,16 @@ const Review = styled.p`
   line-height: normal;
 `;
 
-export default function ProductCard({ imageUrl, title, price, review }) {
+export default function ProductCard({
+  productId,
+  imageUrl,
+  title,
+  price,
+  review,
+}) {
+  const nevigate = useNavigate();
   return (
-    <CardContainer>
+    <CardContainer onClick={() => nevigate(`/ProductDetail/${productId}`)}>
       <ImageBox src={imageUrl} />
       <Title>{title}</Title>
       <Price>{price}</Price>
