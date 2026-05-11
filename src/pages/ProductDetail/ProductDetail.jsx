@@ -126,11 +126,6 @@ const ModalTitle = styled.h3`
   color: #111;
   margin: 0 0 8px;
 `;
-// const ModalDesc = styled.p`
-//   font-size: 14px;
-//   color: #777;
-//   margin: 0 0 28px;
-// `;
 const ModalBtnRow = styled.div`
   display: flex;
   gap: 12px;
@@ -187,7 +182,6 @@ return (
 
       <InfoSection>
         <InfoBox>
-          {/* <Category>{product.category}</Category> */}
           <Price>{product.price}</Price>
           <Title>{product.title}</Title>
           <RatingRow>
@@ -195,15 +189,6 @@ return (
             <RatingNum>{product.rating?.toFixed(1)}</RatingNum>
             <ReviewText>{product.review}</ReviewText>
           </RatingRow>
-          {/* <Divider /> */}
-          {/* <MetaRow>
-            <MetaItem><MetaLabel>성별</MetaLabel><MetaValue>{product.gender}</MetaValue></MetaItem>
-            <MetaItem><MetaLabel>색상</MetaLabel><MetaValue>{product.color}</MetaValue></MetaItem>
-          </MetaRow>
-          <MetaItem>
-            <MetaLabel>사이즈</MetaLabel>
-            <SizeList>{product.size?.map((s) => <SizeChip key={s}>{s}</SizeChip>)}</SizeList>
-          </MetaItem> */}
         </InfoBox>
       </InfoSection>
     </Layout>
