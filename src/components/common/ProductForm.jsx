@@ -61,12 +61,6 @@ const UploadPlaceholder = styled.div`
   gap: 10px;
 `;
 
-// const UploadText = styled.span`
-//   font-size: 13px;
-//   color: #e53935;
-//   font-family: Pretendard, sans-serif;
-// `;
-
 /* 중앙 세로선 */
 const Divider = styled.div`
   width: 1px;
@@ -180,12 +174,6 @@ const GridChip = styled(Chip)`
   padding: 8px 0;
 `;
 
-// // 색상 행별 flex
-// const ColorRow = styled.div`
-//   display: flex;
-//   gap: 6px;
-// `;
-
 const SubmitBtn = styled.button`
   width: 100%;
   padding: 12px 0;
@@ -243,7 +231,6 @@ export default function ProductForm({
                 alt="upload"
                 style={{ width: 44, height: 44, opacity: 0.45 }}
               />
-              {/* <UploadText>클릭 시 사진 파일 업로드 가능</UploadText> */}
             </ImageOverlay>
           </ImageUploadBox>
           <input
