@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useContext } from "react";
 import styled from "styled-components";
 import FilterGroup from "../components/common/FilterBar";
 import SortOption from "../components/common/SortOption";
 import ProductList from "../components/common/ProductList";
 import FilterModal from "../components/common/FilterModal";
-import { useContext } from "react";
 import { ProductContext } from "../context/ProductContext";
+import { getItems } from "../api/shop";
 
 const TopSection = styled.div`
   display: flex;
@@ -36,19 +36,23 @@ const FilterData = {
   category: { title: "종류", options: [["의류", "신발"]] },
 };
 
+// 서버 type값 ↔ 한글 변환
+const typeToKor = { clothes: "의류", shoes: "신발" };
+const genderToKor = { male: "남성", female: "여성", unisex: "남녀공용" };
+
 function matchesPrice(priceNum, selectedPrices) {
   if (selectedPrices.length === 0) return true;
   return selectedPrices.some((range) => {
     if (range === "0~30") return priceNum >= 0 && priceNum <= 30;
     if (range === "31~60") return priceNum >= 31 && priceNum <= 60;
     if (range === "61~90") return priceNum >= 61 && priceNum <= 90;
-    if (range === "91~") return priceNum >= 91;
+    if (range === "91~") return priceNum > 90;
     return false;
   });
 }
 
 export default function Main() {
-  const { products } = useContext(ProductContext);
+  const { products, setProducts } = useContext(ProductContext);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedFilters, setSelectedFilters] = useState({
     gender: [],
@@ -58,14 +62,54 @@ export default function Main() {
     category: [],
   });
 
+  // API에서 clothes, shoes 모두 불러와서 합치기
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const [clothes, shoes] = await Promise.all([
+          getItems("clothes"),
+          getItems("shoes"),
+        ]);
+        const all = [
+          ...clothes.map((item) => ({ ...item, _type: "clothes" })),
+          ...shoes.map((item) => ({ ...item, _type: "shoes" })),
+        ].map((item) => ({
+          productId: `${item._type}-${item.id}`, // ← 중복 key 방지
+          imageUrl: item.image,
+          title: item.name,
+          priceNum: item.price,
+          price: `${Number(item.price).toLocaleString()}원`,
+          reviewNum: item.reviews,
+          review: `리뷰 ${item.reviews}`,
+          rating: item.rating,
+          gender: genderToKor[item.gender] ?? item.gender,
+          color: item.color,
+          size: Array.isArray(item.size) ? item.size : [item.size],
+          category: typeToKor[item.type] ?? item.type,
+          type: item.type,
+          originId: item.id, // API 호출 시 실제 숫자 id 필요하므로 보관
+        }));
+        setProducts(all);
+      } catch (e) {
+        console.error(
+          "데이터 로드 실패 상세:",
+          e.message,
+          e.response?.status,
+          e.response?.data,
+        );
+      }
+    };
+    fetchProducts();
+  }, []);
+
   const toggleFilter = (filterKey, option) => {
     setSelectedFilters((prev) => {
-      const current = prev[filterKey];
+      const cur = prev[filterKey];
       return {
         ...prev,
-        [filterKey]: current.includes(option)
-          ? current.filter((o) => o !== option)
-          : [...current, option],
+        [filterKey]: cur.includes(option)
+          ? cur.filter((o) => o !== option)
+          : [...cur, option],
       };
     });
   };
@@ -114,13 +158,15 @@ export default function Main() {
         />
         <SortOption />
       </TopSection>
+
       <ProductList products={filteredProducts} />
+
       {activeModal && FilterData[activeModal] && (
         <FilterModal
           title={FilterData[activeModal].title}
           options={FilterData[activeModal].options}
           selected={selectedFilters[activeModal]}
-          onToggle={(option) => toggleFilter(activeModal, option)}
+          onToggle={(val) => toggleFilter(activeModal, val)}
           onClose={() => setActiveModal(null)}
         />
       )}

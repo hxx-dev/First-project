@@ -1,7 +1,10 @@
 import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ProductContext } from "../../context/ProductContext";
+import { updateItem } from "../../api/shop";
 import ProductForm from "../../components/common/ProductForm";
+
+const korToGender = { 남성: "male", 여성: "female", 남녀공용: "unisex" };
 
 export default function EditProduct() {
   const { id } = useParams();
@@ -10,8 +13,14 @@ export default function EditProduct() {
   const product = getProduct(id);
 
   const [formData, setFormData] = useState({
-    title: "", rating: "", reviewNum: "", priceNum: "",
-    size: [], category: "", gender: "", color: "",
+    title: "",
+    rating: "",
+    reviewNum: "",
+    priceNum: "",
+    size: [],
+    category: "",
+    gender: "",
+    color: "",
   });
   const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -31,35 +40,66 @@ export default function EditProduct() {
     }
   }, [id]);
 
-  if (!product) return (
-    <div style={{ textAlign: "center", padding: "120px 0", fontFamily: "Pretendard", color: "#aaa" }}>
-      상품을 찾을 수 없습니다.
-    </div>
-  );
+  if (!product)
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          padding: "120px 0",
+          fontFamily: "Pretendard",
+          color: "#aaa",
+        }}
+      >
+        상품을 찾을 수 없습니다.
+      </div>
+    );
 
   const handleChange = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
-
   const handleSingleChip = (field, value) =>
     setFormData((prev) => ({
       ...prev,
       [field]: prev[field] === value ? "" : value,
     }));
-
   const handleImageChange = (_, url) => setPreviewUrl(url);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    const type = product.type ?? "clothes";
+    const gender = korToGender[formData.gender] ?? formData.gender;
     const priceNum = Number(formData.priceNum);
-    updateProduct(id, {
-      ...formData,
-      imageUrl: previewUrl || product.imageUrl,
-      priceNum,
-      price: `${priceNum.toLocaleString()}원`,
+
+    const body = {
+      image: previewUrl || product.imageUrl,
+      name: formData.title,
       rating: Number(formData.rating) || 0,
-      reviewNum: Number(formData.reviewNum) || 0,
-      review: `리뷰 ${Number(formData.reviewNum).toLocaleString()}`,
-    });
-    navigate(`/ProductDetail/${id}`);
+      reviews: Number(formData.reviewNum) || 0,
+      price: priceNum,
+      soldout: false,
+      color: formData.color,
+      size: Array.isArray(formData.size)
+        ? formData.size.join(", ")
+        : formData.size,
+      gender,
+      type,
+    };
+
+    try {
+      const originId = product.originId ?? id.split("-")[1] ?? id;
+      await updateItem(type, originId, body);
+      updateProduct(id, {
+        ...formData,
+        imageUrl: body.image,
+        priceNum,
+        price: `${priceNum.toLocaleString()}원`,
+        rating: body.rating,
+        reviewNum: body.reviews,
+        review: `리뷰 ${body.reviews}`,
+        type,
+      });
+      navigate(`/ProductDetail/${id}`);
+    } catch {
+      alert("수정에 실패했습니다.");
+    }
   };
 
   return (

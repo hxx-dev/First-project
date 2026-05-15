@@ -1,10 +1,9 @@
 import { createContext, useContext, useState } from "react";
-import { ProductData as initialData } from "../Main/productDummy.js";
 
 export const ProductContext = createContext(null);
 
 export function ProductProvider({ children }) {
-  const [products, setProducts] = useState(initialData);
+  const [products, setProducts] = useState([]);
 
   const addProduct = (newProduct) => {
     const newId =
@@ -27,11 +26,18 @@ export function ProductProvider({ children }) {
     );
   };
 
-  const getProduct = (id) => products.find((p) => p.productId === Number(id));
+  const getProduct = (id) => products.find((p) => p.productId === id || p.productId === Number(id));
 
   return (
     <ProductContext.Provider
-      value={{ products, addProduct, deleteProduct, updateProduct, getProduct }}
+      value={{
+        products,
+        setProducts,
+        addProduct,
+        deleteProduct,
+        updateProduct,
+        getProduct,
+      }}
     >
       {children}
     </ProductContext.Provider>

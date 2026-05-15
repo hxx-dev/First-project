@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import styled from "styled-components";
 import { useContext } from "react";
+import styled from "styled-components";
 import { ProductContext } from "../../context/ProductContext";
+import { getItemById, deleteItem } from "../../api/shop";
 
 const Wrapper = styled.div`
   display: flex;
@@ -10,35 +11,30 @@ const Wrapper = styled.div`
   padding: 40px 0 80px;
   font-family: Pretendard, sans-serif;
 `;
-
 const Layout = styled.div`
   display: flex;
   align-items: flex-start;
   width: 100%;
   max-width: 1200px;
 `;
-
 const ImageSection = styled.div`
   flex: 1;
   display: flex;
   justify-content: flex-end;
   padding-right: 140px;
 `;
-
 const Divider = styled.div`
   width: 1px;
   align-self: stretch;
   background: #e0e0e0;
   flex-shrink: 0;
 `;
-
 const InfoSection = styled.div`
   flex: 1;
   display: flex;
   justify-content: flex-start;
   padding-left: 60px;
 `;
-
 const ImageBox = styled.div`
   width: 400px;
   border-radius: 16px;
@@ -51,18 +47,11 @@ const ProductImage = styled.img`
   object-fit: cover;
   display: block;
 `;
-
 const InfoBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding-top: 12px;
-`;
-
-const ModalDesc = styled.p`
-  font-size: 14px;
-  color: #777;
-  margin: 0 0 28px;
 `;
 const Price = styled.div`
   font-size: 32px;
@@ -100,8 +89,6 @@ const NotFound = styled.div`
   color: #aaa;
   font-family: Pretendard, sans-serif;
 `;
-
-// 삭제 모달
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
@@ -126,6 +113,11 @@ const ModalTitle = styled.h3`
   color: #111;
   margin: 0 0 8px;
 `;
+const ModalDesc = styled.p`
+  font-size: 14px;
+  color: #777;
+  margin: 0 0 28px;
+`;
 const ModalBtnRow = styled.div`
   display: flex;
   gap: 12px;
@@ -140,71 +132,121 @@ const ModalBtn = styled.button`
   cursor: pointer;
   border: none;
 `;
-const CancelBtn = styled(ModalBtn)`
-  background: #D0D0D0;
-  color: #333333;
-`;
 const ConfirmBtn = styled(ModalBtn)`
-  background: #F2F2F2;
-  color: #333333;
+  background: #f2f2f2;
+  color: #333;
 `;
-
-function StarRating() {
-  return <Star>★</Star>;
-}
+const CancelBtn = styled(ModalBtn)`
+  background: #d0d0d0;
+  color: #333;
+`;
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getProduct, deleteProduct } = useContext(ProductContext);
+  const [product, setProduct] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const product = getProduct(id);
-
+  // 헤더 삭제 버튼 이벤트 수신
   useEffect(() => {
     const handler = () => setShowDeleteModal(true);
     window.addEventListener("openDeleteModal", handler);
     return () => window.removeEventListener("openDeleteModal", handler);
   }, []);
 
+  // 상품 데이터 불러오기
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+
+      // 1. Context에서 먼저 찾기 (type 정보 필요)
+      const cached = getProduct(id);
+      if (cached) {
+        setProduct(cached);
+        setLoading(false);
+        return;
+      }
+
+      // 2. 없으면 API로 clothes → shoes 순서로 시도
+      try {
+        const [type, originId] = id.includes("-")
+          ? id.split("-")
+          : ["clothes", id];
+        const item = await getItemById(type, originId);
+        setProduct({
+          productId: id,
+          imageUrl: item.image,
+          title: item.name,
+          price: `${Number(item.price).toLocaleString()}원`,
+          rating: item.rating,
+          review: `리뷰 ${item.reviews}`,
+          type: item.type,
+          originId: item.id,
+        });
+      } catch {
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
+
+  const handleDelete = async () => {
+    try {
+      const type = product?.type ?? "clothes";
+      const originId = product?.originId ?? id.split("-")[1] ?? id;
+      await deleteItem(type, originId);
+      deleteProduct(id);
+      navigate("/");
+    } catch {
+      alert("삭제에 실패했습니다.");
+    }
+  };
+
+  if (loading) return null;
   if (!product) return <NotFound>상품을 찾을 수 없습니다.</NotFound>;
 
-return (
-  <Wrapper>
-    <Layout>
-      <ImageSection>
-        <ImageBox>
-          <ProductImage src={product.imageUrl} alt={product.title} />
-        </ImageBox>
-      </ImageSection>
+  return (
+    <Wrapper>
+      <Layout>
+        <ImageSection>
+          <ImageBox>
+            <ProductImage src={product.imageUrl} alt={product.title} />
+          </ImageBox>
+        </ImageSection>
 
-      <Divider />
+        <Divider />
 
-      <InfoSection>
-        <InfoBox>
-          <Price>{product.price}</Price>
-          <Title>{product.title}</Title>
-          <RatingRow>
-            <StarRating rating={product.rating} />
-            <RatingNum>{product.rating?.toFixed(1)}</RatingNum>
-            <ReviewText>{product.review}</ReviewText>
-          </RatingRow>
-        </InfoBox>
-      </InfoSection>
-    </Layout>
+        <InfoSection>
+          <InfoBox>
+            <Price>{product.price}</Price>
+            <Title>{product.title}</Title>
+            <RatingRow>
+              <Star>★</Star>
+              <RatingNum>{product.rating?.toFixed(1)}</RatingNum>
+              <ReviewText>{product.review}</ReviewText>
+            </RatingRow>
+          </InfoBox>
+        </InfoSection>
+      </Layout>
 
-    {showDeleteModal && (
-      <Overlay onClick={() => setShowDeleteModal(false)}>
-        <ModalBox onClick={(e) => e.stopPropagation()}>
-          <ModalTitle>상품 삭제</ModalTitle>
-          <ModalDesc>상품을 삭제하시겠습니까?</ModalDesc>
-          <ModalBtnRow>
-            <ConfirmBtn onClick={() => { deleteProduct(id); navigate("/"); }}>확인</ConfirmBtn>
-            <CancelBtn onClick={() => setShowDeleteModal(false)}>취소</CancelBtn>
-          </ModalBtnRow>
-        </ModalBox>
-      </Overlay>
-    )}
-  </Wrapper>
-);
+      {showDeleteModal && (
+        <Overlay onClick={() => setShowDeleteModal(false)}>
+          <ModalBox onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>상품 삭제</ModalTitle>
+            <ModalDesc>상품을 삭제하시겠습니까?</ModalDesc>
+            <ModalBtnRow>
+              <ConfirmBtn onClick={handleDelete}>확인</ConfirmBtn>
+              <CancelBtn onClick={() => setShowDeleteModal(false)}>
+                취소
+              </CancelBtn>
+            </ModalBtnRow>
+          </ModalBox>
+        </Overlay>
+      )}
+    </Wrapper>
+  );
 }
